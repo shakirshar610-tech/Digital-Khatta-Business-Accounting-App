@@ -1,0 +1,6 @@
+{
+  "name": "KarobarKhata Pro",
+  "description": "Offline-first bilingual (English & Urdu) business ledger, customer & supplier khata, inventory, invoicing, expense tracking, and staff payroll management system for Android and Windows Desktop.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

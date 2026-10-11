@@ -1,0 +1,395 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Default-Deny Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // =========================================================================
+    // Phase 3: Global Hardened Primitives
+    // =========================================================================
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(ownerId) {
+      return isSignedIn() && request.auth.uid == ownerId;
+    }
+
+    // =========================================================================
+    // Validation Blueprints (Pillar 2: Anti-Update-Gap)
+    // =========================================================================
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['ownerId', 'businessName', 'businessCategory', 'currency', 'language', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'businessName', 'businessCategory', 'currency', 'language', 'createdAt', 'updatedAt'])
+        && data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.businessName is string && data.businessName.size() >= 1 && data.businessName.size() <= 120
+        && data.businessCategory is string && data.businessCategory.size() >= 1 && data.businessCategory.size() <= 80
+        && data.currency is string && data.currency.size() == 3 && data.currency in ['PKR', 'USD', 'AED', 'SAR', 'GBP']
+        && data.language is string && data.language.size() == 2 && data.language in ['en', 'ur']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidParty(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'phone', 'address', 'partyType', 'balance', 'totalDebit', 'totalCredit', 'notes', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'name', 'phone', 'address', 'partyType', 'balance', 'totalDebit', 'totalCredit', 'notes', 'createdAt', 'updatedAt'])
+        && data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 120
+        && data.phone is string && data.phone.size() <= 30
+        && data.address is string && data.address.size() <= 250
+        && data.partyType is string && data.partyType.size() <= 20 && data.partyType in ['customer', 'supplier']
+        && (data.balance is int || data.balance is float) && data.balance >= -1000000000 && data.balance <= 1000000000
+        && (data.totalDebit is int || data.totalDebit is float) && data.totalDebit >= 0 && data.totalDebit <= 1000000000
+        && (data.totalCredit is int || data.totalCredit is float) && data.totalCredit >= 0 && data.totalCredit <= 1000000000
+        && data.notes is string && data.notes.size() <= 500
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidKhataEntry(data) {
+      return data.keys().hasAll(['ownerId', 'partyId', 'partyName', 'entryType', 'amount', 'paymentMethod', 'referenceNo', 'description', 'entryDate', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'partyId', 'partyName', 'entryType', 'amount', 'paymentMethod', 'referenceNo', 'description', 'entryDate', 'createdAt', 'updatedAt'])
+        && data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.partyId is string && data.partyId.size() >= 1 && data.partyId.size() <= 128 && data.partyId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.partyName is string && data.partyName.size() >= 1 && data.partyName.size() <= 120
+        && data.entryType is string && data.entryType.size() <= 10 && data.entryType in ['debit', 'credit']
+        && (data.amount is int || data.amount is float) && data.amount > 0 && data.amount <= 1000000000
+        && data.paymentMethod is string && data.paymentMethod.size() <= 20 && data.paymentMethod in ['cash', 'bank', 'jazzcash', 'easypaisa', 'cheque', 'credit']
+        && data.referenceNo is string && data.referenceNo.size() <= 60
+        && data.description is string && data.description.size() <= 300
+        && data.entryDate is string && data.entryDate.size() >= 10 && data.entryDate.size() <= 30
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidInventoryItem(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'sku', 'category', 'unit', 'purchasePrice', 'salePrice', 'stockQuantity', 'lowStockThreshold', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'name', 'sku', 'category', 'unit', 'purchasePrice', 'salePrice', 'stockQuantity', 'lowStockThreshold', 'createdAt', 'updatedAt'])
+        && data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 120
+        && data.sku is string && data.sku.size() >= 1 && data.sku.size() <= 60
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 80
+        && data.unit is string && data.unit.size() <= 20 && data.unit in ['pcs', 'kg', 'bag', 'carton', 'liter', 'meter', 'box', 'dozen']
+        && (data.purchasePrice is int || data.purchasePrice is float) && data.purchasePrice >= 0 && data.purchasePrice <= 100000000
+        && (data.salePrice is int || data.salePrice is float) && data.salePrice >= 0 && data.salePrice <= 100000000
+        && (data.stockQuantity is int || data.stockQuantity is float) && data.stockQuantity >= 0 && data.stockQuantity <= 10000000
+        && (data.lowStockThreshold is int || data.lowStockThreshold is float) && data.lowStockThreshold >= 0 && data.lowStockThreshold <= 1000000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidInvoice(data) {
+      return data.keys().hasAll(['ownerId', 'invoiceNumber', 'invoiceType', 'partyId', 'partyName', 'itemsSummary', 'subtotal', 'discountAmount', 'taxAmount', 'totalAmount', 'paidAmount', 'balanceDue', 'paymentMethod', 'invoiceStatus', 'invoiceDate', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'invoiceNumber', 'invoiceType', 'partyId', 'partyName', 'itemsSummary', 'subtotal', 'discountAmount', 'taxAmount', 'totalAmount', 'paidAmount', 'balanceDue', 'paymentMethod', 'invoiceStatus', 'invoiceDate', 'createdAt', 'updatedAt'])
+        && data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.invoiceNumber is string && data.invoiceNumber.size() >= 1 && data.invoiceNumber.size() <= 60
+        && data.invoiceType is string && data.invoiceType.size() <= 20 && data.invoiceType in ['sale', 'purchase']
+        && data.partyId is string && data.partyId.size() >= 1 && data.partyId.size() <= 128 && data.partyId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.partyName is string && data.partyName.size() >= 1 && data.partyName.size() <= 120
+        && data.itemsSummary is string && data.itemsSummary.size() >= 1 && data.itemsSummary.size() <= 1500
+        && (data.subtotal is int || data.subtotal is float) && data.subtotal >= 0 && data.subtotal <= 1000000000
+        && (data.discountAmount is int || data.discountAmount is float) && data.discountAmount >= 0 && data.discountAmount <= 1000000000
+        && (data.taxAmount is int || data.taxAmount is float) && data.taxAmount >= 0 && data.taxAmount <= 1000000000
+        && (data.totalAmount is int || data.totalAmount is float) && data.totalAmount >= 0 && data.totalAmount <= 1000000000
+        && (data.paidAmount is int || data.paidAmount is float) && data.paidAmount >= 0 && data.paidAmount <= 1000000000
+        && (data.balanceDue is int || data.balanceDue is float) && data.balanceDue >= 0 && data.balanceDue <= 1000000000
+        && data.paymentMethod is string && data.paymentMethod.size() <= 20 && data.paymentMethod in ['cash', 'bank', 'jazzcash', 'easypaisa', 'cheque', 'credit']
+        && data.invoiceStatus is string && data.invoiceStatus.size() <= 20 && data.invoiceStatus in ['draft', 'issued', 'paid', 'cancelled']
+        && data.invoiceDate is string && data.invoiceDate.size() >= 10 && data.invoiceDate.size() <= 30
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidExpense(data) {
+      return data.keys().hasAll(['ownerId', 'title', 'category', 'amount', 'paymentMethod', 'referenceNo', 'notes', 'expenseDate', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'title', 'category', 'amount', 'paymentMethod', 'referenceNo', 'notes', 'expenseDate', 'createdAt', 'updatedAt'])
+        && data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 120
+        && data.category is string && data.category.size() <= 30 && data.category in ['rent', 'utilities', 'refreshments', 'transport', 'packaging', 'maintenance', 'payroll', 'marketing', 'other']
+        && (data.amount is int || data.amount is float) && data.amount > 0 && data.amount <= 100000000
+        && data.paymentMethod is string && data.paymentMethod.size() <= 20 && data.paymentMethod in ['cash', 'bank', 'jazzcash', 'easypaisa', 'cheque']
+        && data.referenceNo is string && data.referenceNo.size() <= 60
+        && data.notes is string && data.notes.size() <= 300
+        && data.expenseDate is string && data.expenseDate.size() >= 10 && data.expenseDate.size() <= 30
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidStaffMember(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'roleTitle', 'phone', 'monthlySalary', 'advanceBalance', 'joiningDate', 'employmentStatus', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'name', 'roleTitle', 'phone', 'monthlySalary', 'advanceBalance', 'joiningDate', 'employmentStatus', 'createdAt', 'updatedAt'])
+        && data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 120
+        && data.roleTitle is string && data.roleTitle.size() >= 1 && data.roleTitle.size() <= 80
+        && data.phone is string && data.phone.size() <= 30
+        && (data.monthlySalary is int || data.monthlySalary is float) && data.monthlySalary > 0 && data.monthlySalary <= 10000000
+        && (data.advanceBalance is int || data.advanceBalance is float) && data.advanceBalance >= 0 && data.advanceBalance <= 10000000
+        && data.joiningDate is string && data.joiningDate.size() >= 10 && data.joiningDate.size() <= 30
+        && data.employmentStatus is string && data.employmentStatus.size() <= 20 && data.employmentStatus in ['active', 'inactive', 'terminated']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAttendanceRecord(data) {
+      return data.keys().hasAll(['ownerId', 'staffId', 'staffName', 'attendanceDate', 'attendanceState', 'overtimeHours', 'notes', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'staffId', 'staffName', 'attendanceDate', 'attendanceState', 'overtimeHours', 'notes', 'createdAt', 'updatedAt'])
+        && data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.staffId is string && data.staffId.size() >= 1 && data.staffId.size() <= 128 && data.staffId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.staffName is string && data.staffName.size() >= 1 && data.staffName.size() <= 120
+        && data.attendanceDate is string && data.attendanceDate.size() >= 10 && data.attendanceDate.size() <= 30
+        && data.attendanceState is string && data.attendanceState.size() <= 20 && data.attendanceState in ['present', 'absent', 'half_day', 'paid_leave']
+        && (data.overtimeHours is int || data.overtimeHours is float) && data.overtimeHours >= 0 && data.overtimeHours <= 24
+        && data.notes is string && data.notes.size() <= 200
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidPayrollRecord(data) {
+      return data.keys().hasAll(['ownerId', 'staffId', 'staffName', 'monthYear', 'baseSalary', 'overtimePay', 'deductions', 'netPaid', 'paymentMethod', 'paymentDate', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'staffId', 'staffName', 'monthYear', 'baseSalary', 'overtimePay', 'deductions', 'netPaid', 'paymentMethod', 'paymentDate', 'createdAt', 'updatedAt'])
+        && data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.staffId is string && data.staffId.size() >= 1 && data.staffId.size() <= 128 && data.staffId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.staffName is string && data.staffName.size() >= 1 && data.staffName.size() <= 120
+        && data.monthYear is string && data.monthYear.size() >= 7 && data.monthYear.size() <= 20
+        && (data.baseSalary is int || data.baseSalary is float) && data.baseSalary >= 0 && data.baseSalary <= 10000000
+        && (data.overtimePay is int || data.overtimePay is float) && data.overtimePay >= 0 && data.overtimePay <= 10000000
+        && (data.deductions is int || data.deductions is float) && data.deductions >= 0 && data.deductions <= 10000000
+        && (data.netPaid is int || data.netPaid is float) && data.netPaid >= 0 && data.netPaid <= 20000000
+        && data.paymentMethod is string && data.paymentMethod.size() <= 20 && data.paymentMethod in ['cash', 'bank', 'jazzcash', 'easypaisa']
+        && data.paymentDate is string && data.paymentDate.size() >= 10 && data.paymentDate.size() <= 30
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // =========================================================================
+    // Collection Match Blocks (Phase 6: Production Fortress Rules)
+    // =========================================================================
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId && existing().ownerId == request.auth.uid;
+      allow list: if false;
+      allow create: if isSignedIn() && isValidId(userId) && request.auth.uid == userId
+        && isValidUserProfile(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isValidId(userId) && request.auth.uid == userId
+        && isValidUserProfile(incoming())
+        && isOwner(existing().ownerId)
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action: UpdateSettings
+          incoming().diff(existing()).affectedKeys().hasOnly(['businessName', 'businessCategory', 'currency', 'language', 'updatedAt'])
+        );
+      allow delete: if false;
+    }
+
+    match /parties/{partyId} {
+      allow get: if isSignedIn() && isValidId(partyId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(partyId)
+        && isValidParty(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isValidId(partyId)
+        && isValidParty(incoming())
+        && isOwner(existing().ownerId)
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action: UpdateBalance
+          incoming().diff(existing()).affectedKeys().hasOnly(['balance', 'totalDebit', 'totalCredit', 'updatedAt']) ||
+          // Action: UpdateDetails
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'address', 'partyType', 'balance', 'totalDebit', 'totalCredit', 'notes', 'updatedAt'])
+        );
+      allow delete: if isSignedIn() && isValidId(partyId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /khata_entries/{entryId} {
+      allow get: if isSignedIn() && isValidId(entryId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(entryId)
+        && isValidKhataEntry(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/parties/$(incoming().partyId))
+        && get(/databases/$(database)/documents/parties/$(incoming().partyId)).data.ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(entryId)
+        && isValidKhataEntry(incoming())
+        && isOwner(existing().ownerId)
+        && incoming().ownerId == existing().ownerId
+        && incoming().partyId == existing().partyId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action: EditEntry
+          incoming().diff(existing()).affectedKeys().hasOnly(['partyName', 'entryType', 'amount', 'paymentMethod', 'referenceNo', 'description', 'entryDate', 'updatedAt'])
+        );
+      allow delete: if isSignedIn() && isValidId(entryId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /inventory_items/{itemId} {
+      allow get: if isSignedIn() && isValidId(itemId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(itemId)
+        && isValidInventoryItem(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isValidId(itemId)
+        && isValidInventoryItem(incoming())
+        && isOwner(existing().ownerId)
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action: AdjustStock
+          incoming().diff(existing()).affectedKeys().hasOnly(['stockQuantity', 'updatedAt']) ||
+          // Action: UpdateItemDetails
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'sku', 'category', 'unit', 'purchasePrice', 'salePrice', 'stockQuantity', 'lowStockThreshold', 'updatedAt'])
+        );
+      allow delete: if isSignedIn() && isValidId(itemId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /invoices/{invoiceId} {
+      allow get: if isSignedIn() && isValidId(invoiceId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(invoiceId)
+        && isValidInvoice(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isValidId(invoiceId)
+        && isValidInvoice(incoming())
+        && isOwner(existing().ownerId)
+        && existing().invoiceStatus != 'cancelled'
+        && incoming().ownerId == existing().ownerId
+        && incoming().invoiceNumber == existing().invoiceNumber
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action: RecordInvoicePayment
+          incoming().diff(existing()).affectedKeys().hasOnly(['paidAmount', 'balanceDue', 'invoiceStatus', 'paymentMethod', 'updatedAt']) ||
+          // Action: CancelInvoice
+          (incoming().invoiceStatus == 'cancelled' && incoming().diff(existing()).affectedKeys().hasOnly(['invoiceStatus', 'updatedAt']))
+        );
+      allow delete: if isSignedIn() && isValidId(invoiceId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /expenses/{expenseId} {
+      allow get: if isSignedIn() && isValidId(expenseId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(expenseId)
+        && isValidExpense(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isValidId(expenseId)
+        && isValidExpense(incoming())
+        && isOwner(existing().ownerId)
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action: UpdateExpense
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'category', 'amount', 'paymentMethod', 'referenceNo', 'notes', 'expenseDate', 'updatedAt'])
+        );
+      allow delete: if isSignedIn() && isValidId(expenseId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /staff_members/{staffId} {
+      allow get: if isSignedIn() && isValidId(staffId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(staffId)
+        && isValidStaffMember(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isValidId(staffId)
+        && isValidStaffMember(incoming())
+        && isOwner(existing().ownerId)
+        && existing().employmentStatus != 'terminated'
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action: UpdateAdvanceOrSalary
+          incoming().diff(existing()).affectedKeys().hasOnly(['advanceBalance', 'monthlySalary', 'updatedAt']) ||
+          // Action: UpdateStaffProfile
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'roleTitle', 'phone', 'monthlySalary', 'advanceBalance', 'joiningDate', 'employmentStatus', 'updatedAt'])
+        );
+      allow delete: if isSignedIn() && isValidId(staffId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /attendance_records/{recordId} {
+      allow get: if isSignedIn() && isValidId(recordId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(recordId)
+        && isValidAttendanceRecord(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/staff_members/$(incoming().staffId))
+        && get(/databases/$(database)/documents/staff_members/$(incoming().staffId)).data.ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(recordId)
+        && isValidAttendanceRecord(incoming())
+        && isOwner(existing().ownerId)
+        && incoming().ownerId == existing().ownerId
+        && incoming().staffId == existing().staffId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action: UpdateAttendanceStatus
+          incoming().diff(existing()).affectedKeys().hasOnly(['attendanceState', 'overtimeHours', 'notes', 'updatedAt'])
+        );
+      allow delete: if isSignedIn() && isValidId(recordId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /payroll_records/{payrollId} {
+      allow get: if isSignedIn() && isValidId(payrollId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(payrollId)
+        && isValidPayrollRecord(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/staff_members/$(incoming().staffId))
+        && get(/databases/$(database)/documents/staff_members/$(incoming().staffId)).data.ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(payrollId)
+        && isValidPayrollRecord(incoming())
+        && isOwner(existing().ownerId)
+        && incoming().ownerId == existing().ownerId
+        && incoming().staffId == existing().staffId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action: UpdatePayrollPayment
+          incoming().diff(existing()).affectedKeys().hasOnly(['baseSalary', 'overtimePay', 'deductions', 'netPaid', 'paymentMethod', 'paymentDate', 'updatedAt'])
+        );
+      allow delete: if isSignedIn() && isValidId(payrollId) && existing().ownerId == request.auth.uid;
+    }
+
+  }
+}

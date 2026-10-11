@@ -1,0 +1,639 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Business owner configuration and workspace settings.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the authenticated business owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "businessName": {
+          "type": "string",
+          "description": "Display name of the business or shop.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "businessCategory": {
+          "type": "string",
+          "description": "Type of retail, wholesale, or service business.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency code used for ledger calculations.",
+          "enum": ["PKR", "USD", "AED", "SAR", "GBP"]
+        },
+        "language": {
+          "type": "string",
+          "description": "Preferred UI language.",
+          "enum": ["en", "ur"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the profile was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the profile was last updated."
+        }
+      },
+      "required": ["ownerId", "businessName", "businessCategory", "currency", "language", "createdAt", "updatedAt"]
+    },
+    "Party": {
+      "title": "Party",
+      "description": "Customer or supplier account in the Khata ledger.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the business owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the customer or supplier.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone number.",
+          "minLength": 0,
+          "maxLength": 30
+        },
+        "address": {
+          "type": "string",
+          "description": "Shop or billing address.",
+          "minLength": 0,
+          "maxLength": 250
+        },
+        "partyType": {
+          "type": "string",
+          "description": "Classification as customer or supplier.",
+          "enum": ["customer", "supplier"]
+        },
+        "balance": {
+          "type": "number",
+          "description": "Net balance (positive means receivable, negative means payable)."
+        },
+        "totalDebit": {
+          "type": "number",
+          "description": "Total amount given (Udhaar / Debit)."
+        },
+        "totalCredit": {
+          "type": "number",
+          "description": "Total amount received (Wusooli / Credit)."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional credit terms or remarks.",
+          "minLength": 0,
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["ownerId", "name", "phone", "address", "partyType", "balance", "totalDebit", "totalCredit", "notes", "createdAt", "updatedAt"]
+    },
+    "KhataEntry": {
+      "title": "KhataEntry",
+      "description": "Single debit or credit ledger entry for a customer or supplier.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the business owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "partyId": {
+          "type": "string",
+          "description": "ID of the linked Party document.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "partyName": {
+          "type": "string",
+          "description": "Snapshot of the party name.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "entryType": {
+          "type": "string",
+          "description": "Debit (You Gave) or Credit (You Got).",
+          "enum": ["debit", "credit"]
+        },
+        "amount": {
+          "type": "number",
+          "description": "Transaction amount."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Payment channel.",
+          "enum": ["cash", "bank", "jazzcash", "easypaisa", "cheque", "credit"]
+        },
+        "referenceNo": {
+          "type": "string",
+          "description": "Bill or voucher reference number.",
+          "minLength": 0,
+          "maxLength": 60
+        },
+        "description": {
+          "type": "string",
+          "description": "Details of the transaction.",
+          "minLength": 0,
+          "maxLength": 300
+        },
+        "entryDate": {
+          "type": "string",
+          "description": "ISO date of transaction.",
+          "minLength": 10,
+          "maxLength": 30
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["ownerId", "partyId", "partyName", "entryType", "amount", "paymentMethod", "referenceNo", "description", "entryDate", "createdAt", "updatedAt"]
+    },
+    "InventoryItem": {
+      "title": "InventoryItem",
+      "description": "Product or stock item in the inventory catalog.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the business owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Product name.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "sku": {
+          "type": "string",
+          "description": "SKU or barcode.",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "category": {
+          "type": "string",
+          "description": "Inventory category.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "unit": {
+          "type": "string",
+          "description": "Measurement unit.",
+          "enum": ["pcs", "kg", "bag", "carton", "liter", "meter", "box", "dozen"]
+        },
+        "purchasePrice": {
+          "type": "number",
+          "description": "Unit cost price."
+        },
+        "salePrice": {
+          "type": "number",
+          "description": "Unit selling price."
+        },
+        "stockQuantity": {
+          "type": "number",
+          "description": "Current quantity in stock."
+        },
+        "lowStockThreshold": {
+          "type": "number",
+          "description": "Minimum stock alert threshold."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["ownerId", "name", "sku", "category", "unit", "purchasePrice", "salePrice", "stockQuantity", "lowStockThreshold", "createdAt", "updatedAt"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Sales invoice or supplier purchase bill.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the business owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "invoiceNumber": {
+          "type": "string",
+          "description": "Formatted invoice or bill number.",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "invoiceType": {
+          "type": "string",
+          "description": "Sale invoice or purchase bill.",
+          "enum": ["sale", "purchase"]
+        },
+        "partyId": {
+          "type": "string",
+          "description": "Linked customer or supplier ID (or walk-in).",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "partyName": {
+          "type": "string",
+          "description": "Customer or supplier name.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "itemsSummary": {
+          "type": "string",
+          "description": "Serialized line items summary.",
+          "minLength": 1,
+          "maxLength": 1500
+        },
+        "subtotal": {
+          "type": "number",
+          "description": "Gross subtotal before discount and tax."
+        },
+        "discountAmount": {
+          "type": "number",
+          "description": "Discount amount."
+        },
+        "taxAmount": {
+          "type": "number",
+          "description": "Tax amount."
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "Net payable invoice total."
+        },
+        "paidAmount": {
+          "type": "number",
+          "description": "Amount paid at billing."
+        },
+        "balanceDue": {
+          "type": "number",
+          "description": "Remaining unpaid balance."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Payment mode.",
+          "enum": ["cash", "bank", "jazzcash", "easypaisa", "cheque", "credit"]
+        },
+        "invoiceStatus": {
+          "type": "string",
+          "description": "Lifecycle status of the invoice.",
+          "enum": ["draft", "issued", "paid", "cancelled"]
+        },
+        "invoiceDate": {
+          "type": "string",
+          "description": "ISO date of invoice.",
+          "minLength": 10,
+          "maxLength": 30
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["ownerId", "invoiceNumber", "invoiceType", "partyId", "partyName", "itemsSummary", "subtotal", "discountAmount", "taxAmount", "totalAmount", "paidAmount", "balanceDue", "paymentMethod", "invoiceStatus", "invoiceDate", "createdAt", "updatedAt"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "Operational business expense record.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the business owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Expense title.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "category": {
+          "type": "string",
+          "description": "Expense classification.",
+          "enum": ["rent", "utilities", "refreshments", "transport", "packaging", "maintenance", "payroll", "marketing", "other"]
+        },
+        "amount": {
+          "type": "number",
+          "description": "Expense amount."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Payment mode.",
+          "enum": ["cash", "bank", "jazzcash", "easypaisa", "cheque"]
+        },
+        "referenceNo": {
+          "type": "string",
+          "description": "Voucher or bill number.",
+          "minLength": 0,
+          "maxLength": 60
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional details.",
+          "minLength": 0,
+          "maxLength": 300
+        },
+        "expenseDate": {
+          "type": "string",
+          "description": "ISO date of expense.",
+          "minLength": 10,
+          "maxLength": 30
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["ownerId", "title", "category", "amount", "paymentMethod", "referenceNo", "notes", "expenseDate", "createdAt", "updatedAt"]
+    },
+    "StaffMember": {
+      "title": "StaffMember",
+      "description": "Employee profile for attendance and payroll.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the business owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of staff member.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "roleTitle": {
+          "type": "string",
+          "description": "Job designation.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact number.",
+          "minLength": 0,
+          "maxLength": 30
+        },
+        "monthlySalary": {
+          "type": "number",
+          "description": "Base monthly salary."
+        },
+        "advanceBalance": {
+          "type": "number",
+          "description": "Current salary advance or loan balance."
+        },
+        "joiningDate": {
+          "type": "string",
+          "description": "ISO joining date.",
+          "minLength": 10,
+          "maxLength": 30
+        },
+        "employmentStatus": {
+          "type": "string",
+          "description": "Current employment status.",
+          "enum": ["active", "inactive", "terminated"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["ownerId", "name", "roleTitle", "phone", "monthlySalary", "advanceBalance", "joiningDate", "employmentStatus", "createdAt", "updatedAt"]
+    },
+    "AttendanceRecord": {
+      "title": "AttendanceRecord",
+      "description": "Daily staff attendance entry.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the business owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "staffId": {
+          "type": "string",
+          "description": "Linked StaffMember document ID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "staffName": {
+          "type": "string",
+          "description": "Snapshot of staff member name.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "attendanceDate": {
+          "type": "string",
+          "description": "ISO date of attendance.",
+          "minLength": 10,
+          "maxLength": 30
+        },
+        "attendanceState": {
+          "type": "string",
+          "description": "Attendance status.",
+          "enum": ["present", "absent", "half_day", "paid_leave"]
+        },
+        "overtimeHours": {
+          "type": "number",
+          "description": "Overtime hours worked."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Attendance remarks.",
+          "minLength": 0,
+          "maxLength": 200
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["ownerId", "staffId", "staffName", "attendanceDate", "attendanceState", "overtimeHours", "notes", "createdAt", "updatedAt"]
+    },
+    "PayrollRecord": {
+      "title": "PayrollRecord",
+      "description": "Monthly salary disbursement or advance payment record.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the business owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "staffId": {
+          "type": "string",
+          "description": "Linked StaffMember document ID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "staffName": {
+          "type": "string",
+          "description": "Snapshot of staff member name.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "monthYear": {
+          "type": "string",
+          "description": "Payroll period in YYYY-MM format.",
+          "minLength": 7,
+          "maxLength": 20
+        },
+        "baseSalary": {
+          "type": "number",
+          "description": "Calculated base salary for the period."
+        },
+        "overtimePay": {
+          "type": "number",
+          "description": "Overtime compensation."
+        },
+        "deductions": {
+          "type": "number",
+          "description": "Absence or advance deductions."
+        },
+        "netPaid": {
+          "type": "number",
+          "description": "Net disbursed salary."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Disbursement mode.",
+          "enum": ["cash", "bank", "jazzcash", "easypaisa"]
+        },
+        "paymentDate": {
+          "type": "string",
+          "description": "ISO date of salary payment.",
+          "minLength": 10,
+          "maxLength": 30
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["ownerId", "staffId", "staffName", "monthYear", "baseSalary", "overtimePay", "deductions", "netPaid", "paymentMethod", "paymentDate", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores business configuration and preferences for each authenticated owner."
+    },
+    "/parties/{partyId}": {
+      "schema": "Party",
+      "description": "Stores customer and supplier accounts and their Khata balances."
+    },
+    "/khata_entries/{entryId}": {
+      "schema": "KhataEntry",
+      "description": "Stores individual debit and credit Khata ledger entries."
+    },
+    "/inventory_items/{itemId}": {
+      "schema": "InventoryItem",
+      "description": "Stores product inventory and stock levels."
+    },
+    "/invoices/{invoiceId}": {
+      "schema": "Invoice",
+      "description": "Stores sales invoices and purchase bills."
+    },
+    "/expenses/{expenseId}": {
+      "schema": "Expense",
+      "description": "Stores operational business expenses."
+    },
+    "/staff_members/{staffId}": {
+      "schema": "StaffMember",
+      "description": "Stores employee profiles and salary settings."
+    },
+    "/attendance_records/{recordId}": {
+      "schema": "AttendanceRecord",
+      "description": "Stores daily staff attendance logs."
+    },
+    "/payroll_records/{payrollId}": {
+      "schema": "PayrollRecord",
+      "description": "Stores monthly payroll and salary payment records."
+    }
+  }
+}
