@@ -2,11 +2,6 @@
 
 **A Digital Business Ledger for Everyday Accounting**
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-React-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Built%20With-Vite-646CFF?style=flat-square&logo=vite)](https://vite.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Styling-Tailwind%20CSS-06B6D4?style=flat-square&logo=tailwindcss)](https://tailwindcss.com/)
-[![Firebase](https://img.shields.io/badge/Integration-Firebase-FFCA28?style=flat-square&logo=firebase)](https://firebase.google.com/)
-
 ## Overview
 
 Digital Khatta is a digital business accounting and bookkeeping web application designed to help businesses organize their financial activities and daily records.
