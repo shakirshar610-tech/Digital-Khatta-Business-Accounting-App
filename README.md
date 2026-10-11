@@ -2,7 +2,6 @@
 
 **A Digital Business Ledger for Everyday Accounting**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Open%20App-2563EB?style=for-the-badge)](https://remix-digital-khata-business-accounting-app-8210.ai.studio/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-React-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Built%20With-Vite-646CFF?style=flat-square&logo=vite)](https://vite.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Styling-Tailwind%20CSS-06B6D4?style=flat-square&logo=tailwindcss)](https://tailwindcss.com/)
